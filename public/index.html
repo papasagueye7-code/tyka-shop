@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TYKA SHOP / TYKA Fashion</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background-color: #f4f6f8; color: #333; }
+    
+    header {
+      background-color: #0088cc;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .cart-btn {
+      background-color: white;
+      color: #333;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: none;
+      cursor: pointer;
+    }
+
+    .cart-count {
+      background-color: #e74c3c;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 8px;
+      font-size: 14px;
+    }
+
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 15px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card img { width: 100%; height: 200px; object-fit: cover; }
+    .card-body { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
+    .category { font-size: 12px; color: #888; text-transform: uppercase; margin-bottom: 5px; }
+    .title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+    .prices { margin-bottom: 15px; }
+    .price { font-size: 18px; font-weight: bold; color: #0088cc; }
+    .old-price { text-decoration: line-through; color: #888; font-size: 14px; margin-left: 8px; }
+
+    .btn {
+      background-color: #0088cc;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+      margin-top: auto;
+    }
+    .btn:hover { background-color: #006699; }
+
+    /* Style Fenêtre Panier (Modal) */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 15px; right: 15px;
+      font-size: 20px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-weight: bold;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .cart-item-remove {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .form-group {
+      margin-top: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .order-btn {
+      background-color: #27ae60;
+      margin-top: 20px;
+    }
+    .order-btn:hover { background-color: #219150; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>TYKA SHOP</h1>
+    <button class="cart-btn" onclick="openCart()">
+      🛒 Panier : <span class="cart-count" id="cart-count">0</span>
+      <span id="cart-total">0 FCFA</span>
+    </button>
+  </header>
+
+  <div class="container">
+    <h2>Nos Produits</h2>
+    <br>
+    <div class="grid" id="products-container"></div>
+  </div>
+
+  <!-- Modal du Panier -->
+  <div class="modal" id="cart-modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeCart()">✕</button>
+      <h3>Votre Panier</h3>
+      <hr style="margin: 10px 0;">
+
+      <div id="cart-items-list">
+        <p style="text-align: center; color: #777; margin: 20px 0;">Votre panier est vide.</p>
+      </div>
+
+      <div style="margin-top: 15px; font-weight: bold; font-size: 18px; text-align: right;">
+        Total : <span id="modal-cart-total">0 FCFA</span>
+      </div>
+
+      <!-- Formulaire de commande -->
+      <div id="checkout-form" style="display: none; margin-top: 20px;">
+        <h4>Informations de livraison</h4>
+        
+        <div class="form-group">
+          <label>Nom complet :</label>
+          <input type="text" id="customer-name" placeholder="Votre nom et prénom">
+        </div>
+
+        <div class="form-group">
+          <label>Téléphone :</label>
+          <input type="text" id="customer-phone" placeholder="Ex: 77 123 45 67">
+        </div>
+
+        <div class="form-group">
+          <label>Mode de paiement :</label>
+          <select id="payment-method">
+            <option value="wave">Wave (77 207 13 65)</option>
+            <option value="orange_money">Orange Money (77 207 13 65)</option>
+            <option value="free_money">Free Money (77 207 13 65)</option>
+            <option value="livraison">Paiement à la livraison</option>
+          </select>
+        </div>
+
+        <button class="btn order-btn" onclick="submitOrder()">Commander via WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let cart = [];
+
+    async function loadProducts() {
+      try {
+        const res = await fetch('/api/products');
+        const products = await res.json();
+        const container = document.getElementById('products-container');
+        container.innerHTML = '';
+
+        products.forEach(product => {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const oldPriceHtml = product.oldPrice 
+            ? `<span class="old-price">${product.oldPrice.toLocaleString()} FCFA</span>` 
+            : '';
+
+          card.innerHTML = `
+            <img src="${product.image}" alt="${product.name}">
+            <div class="card-body">
+              <div class="category">${product.category}</div>
+              <div class="title">${product.name}</div>
+              <div class="prices">
+                <span class="price">${product.price.toLocaleString()} FCFA</span>
+                ${oldPriceHtml}
+              </div>
+              <button class="btn" onclick="addToCart('${product.name}', ${product.price})">Ajouter au panier</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        console.error("Erreur lors du chargement des produits :", error);
+      }
+    }
+
+    function addToCart(name, price) {
+      const existing = cart.find(item => item.name === name);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ name, price, quantity: 1 });
+      }
+      updateCartUI();
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartUI();
+      renderCartItems();
+    }
+
+    function updateCartUI() {
+      const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      document.getElementById('cart-count').innerText = totalCount;
+      document.getElementById('cart-total').innerText = totalPrice.toLocaleString() + ' FCFA';
+      document.getElementById('modal-cart-total').innerText = totalPrice.toLocaleString() + ' FCFA';
+    }
+
+    function renderCartItems() {
+      const listContainer = document.getElementById('cart-items-list');
+      const checkoutForm = document.getElementById('checkout-form');
+
+      if (cart.length === 0) {
+        listContainer.innerHTML = '<p style="text-align: center; color: #777; margin: 20px 0;">Votre panier est vide.</p>';
+        checkoutForm.style.display = 'none';
+        return;
+      }
+
+      checkoutForm.style.display = 'block';
+      listContainer.innerHTML = '';
+
+      cart.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'cart-item';
+        itemDiv.innerHTML = `
+          <div>
+            <strong>${item.name}</strong><br>
+            <small>${item.price.toLocaleString()} FCFA x ${item.quantity}</small>
+          </div>
+          <div>
+            <span style="font-weight: bold; margin-right: 10px;">${(item.price * item.quantity).toLocaleString()} FCFA</span>
+            <button class="cart-item-remove" onclick="removeFromCart(${index})">Supprimer</button>
+          </div>
+        `;
+        listContainer.appendChild(itemDiv);
+      });
+    }
+
+    function openCart() {
+      renderCartItems();
+      document.getElementById('cart-modal').style.display = 'flex';
+    }
+
+    function closeCart() {
+      document.getElementById('cart-modal').style.display = 'none';
+    }
+
+    async function submitOrder() {
+      const name = document.getElementById('customer-name').value.trim();
+      const phone = document.getElementById('customer-phone').value.trim();
+      const paymentMethod = document.getElementById('payment-method').value;
+
+      if (!name || !phone) {
+        alert("Veuillez remplir votre nom et numéro de téléphone.");
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer: { name, phone },
+            items: cart,
+            total,
+            paymentMethod
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert("Commande créée ! Vous allez être redirigé vers WhatsApp pour finaliser.");
+          window.open(data.whatsappUrl, '_blank');
+          cart = [];
+          updateCartUI();
+          closeCart();
+        } else {
+          alert("Erreur : " + data.error);
+        }
+      } catch (err) {
+        console.error("Erreur lors de l'envoi :", err);
+        alert("Erreur lors de la commande.");
+      }
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>
